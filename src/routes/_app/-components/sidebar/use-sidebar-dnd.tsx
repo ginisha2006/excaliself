@@ -6,7 +6,10 @@ import {
   useContext,
   useState,
 } from "react"
-import { useImportDrawingFiles } from "@/features/drawings/import-files"
+import {
+  isFileDrag,
+  useImportDrawingFiles,
+} from "@/features/drawings/import-files"
 import { type Drawing, drawingsQueryOptions } from "@/features/drawings/queries"
 import { updateDrawing } from "@/features/drawings/server"
 import { type Folder, foldersQueryOptions } from "@/features/folders/queries"
@@ -23,10 +26,6 @@ const sameTarget = (a: DropTarget | null, b: DropTarget) =>
   a.type === b.type &&
   a.space === b.space &&
   (a.type !== "folder" || b.type !== "folder" || a.id === b.id)
-
-/** Files dragged in from the computer, not a sidebar row. */
-export const isFileDrag = (e: DragEvent) =>
-  e.dataTransfer.types.includes("Files")
 
 type Options = {
   drawings: Drawing[]

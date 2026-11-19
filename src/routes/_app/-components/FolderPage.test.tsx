@@ -7,8 +7,10 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react"
+import type { DragEvent } from "react"
 import { afterEach, beforeEach, expect, test, vi } from "vitest"
 import { renderPreviewSvg } from "@/components/drawing-gallery/preview"
+import type { Space } from "@/db/schema"
 import type { Drawing } from "@/features/drawings/queries"
 import { drawingsQueryOptions } from "@/features/drawings/queries"
 import { getDrawings } from "@/features/drawings/server"
@@ -16,12 +18,32 @@ import type { Folder } from "@/features/folders/queries"
 import { foldersQueryOptions } from "@/features/folders/queries"
 import { FolderPage } from "./FolderPage"
 
-const { openCreateDrawingDialog, openCreateFolderDialog, navigate } =
-  vi.hoisted(() => ({
-    openCreateDrawingDialog: vi.fn(),
-    openCreateFolderDialog: vi.fn(),
-    navigate: vi.fn(),
-  }))
+const {
+  openCreateDrawingDialog,
+  openCreateFolderDialog,
+  navigate,
+  importFiles,
+} = vi.hoisted(() => ({
+  openCreateDrawingDialog: vi.fn(),
+  openCreateFolderDialog: vi.fn(),
+  navigate: vi.fn(),
+  importFiles: vi.fn(),
+}))
+
+vi.mock("@/features/drawings/import-files", () => ({
+  useFileDropTarget: (
+    target: { folderId: string | null; space: Space } | null,
+  ) => ({
+    isOver: false,
+    onDragOver: vi.fn(),
+    onDragLeave: vi.fn(),
+    onDrop: (event: DragEvent) => {
+      if (!target || !event.dataTransfer?.types.includes("Files")) return
+      const files = [...event.dataTransfer.files]
+      if (files.length > 0) importFiles(files, target)
+    },
+  }),
+}))
 
 // Cards and rows poll for live sessions (spec §1.5); these tests are not
 // about the badge, so the poll answers "nobody".
@@ -115,11 +137,15 @@ function makeDrawing(overrides: Partial<Drawing> & { id: string }): Drawing {
   }
 }
 
-function makeFolder(id: string, name: string): Folder {
+function makeFolder(
+  id: string,
+  name: string,
+  space: Space = "private",
+): Folder {
   return {
     id,
     name,
-    space: "private",
+    space,
     createdBy: "user-1",
     deletedBy: null,
     parentId: null,
@@ -293,6 +319,39 @@ test("a folder deleted while the page is open lands on /drawings", async () => {
   )
   // No error screen, no ghost content
   expect(screen.queryByRole("heading")).toBeNull()
+})
+
+test("files dropped on the folder grid import into that folder", () => {
+  renderFolderPage({
+    folders: [makeFolder("f1", "Projects", "team")],
+  })
+
+  fireEvent.drop(screen.getByLabelText("Drop Excalidraw files"), {
+    dataTransfer: {
+      types: ["Files"],
+      files: [new File(["{}"], "Plan.excalidraw")],
+    },
+  })
+
+  expect(importFiles).toHaveBeenCalledWith(
+    [expect.objectContaining({ name: "Plan.excalidraw" })],
+    { folderId: "f1", space: "team" },
+  )
+})
+
+test("non-file drags dropped on the folder grid do not import", () => {
+  renderFolderPage({
+    folders: [makeFolder("f1", "Projects", "team")],
+  })
+
+  fireEvent.drop(screen.getByLabelText("Drop Excalidraw files"), {
+    dataTransfer: {
+      types: ["text/plain"],
+      files: [],
+    },
+  })
+
+  expect(importFiles).not.toHaveBeenCalled()
 })
 
 test("loading holds the grid with the delayed skeleton, not a spinner", () => {

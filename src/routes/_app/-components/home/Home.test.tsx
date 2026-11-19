@@ -7,6 +7,7 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react"
+import type { DragEvent } from "react"
 import { afterEach, beforeEach, expect, test, vi } from "vitest"
 import { renderPreviewSvg } from "@/components/drawing-gallery/preview"
 import type { Space } from "@/db/schema"
@@ -18,12 +19,30 @@ import type { Folder } from "@/features/folders/queries"
 import { foldersQueryOptions } from "@/features/folders/queries"
 import { Home } from "./Home"
 
-const { openCreateDrawingDialog, openCreateFolderDialog, routerSearch } =
-  vi.hoisted(() => ({
-    openCreateDrawingDialog: vi.fn(),
-    openCreateFolderDialog: vi.fn(),
-    routerSearch: { current: {} as { space?: Space } },
-  }))
+const {
+  openCreateDrawingDialog,
+  openCreateFolderDialog,
+  routerSearch,
+  importFiles,
+} = vi.hoisted(() => ({
+  openCreateDrawingDialog: vi.fn(),
+  openCreateFolderDialog: vi.fn(),
+  routerSearch: { current: {} as { space?: Space } },
+  importFiles: vi.fn(),
+}))
+
+vi.mock("@/features/drawings/import-files", () => ({
+  useFileDropTarget: (target: { folderId: string | null; space: Space }) => ({
+    isOver: false,
+    onDragOver: vi.fn(),
+    onDragLeave: vi.fn(),
+    onDrop: (event: DragEvent) => {
+      if (!event.dataTransfer?.types.includes("Files")) return
+      const files = [...event.dataTransfer.files]
+      if (files.length > 0) importFiles(files, target)
+    },
+  }),
+}))
 
 // Cards and rows poll for live sessions (spec §1.5); these tests are not
 // about the badge, so the poll answers "nobody".
@@ -528,6 +547,51 @@ test("browsing Team shows Team drawings and View all keeps the scope", () => {
   expect(
     screen.getByRole("link", { name: /view all/i }).getAttribute("href"),
   ).toBe("/drawings?space=team")
+})
+
+test("files dropped on Home import into the currently browsed root", () => {
+  renderHome({ teamEnabled: true, space: "team" })
+
+  fireEvent.drop(screen.getByLabelText("Drop Excalidraw files"), {
+    dataTransfer: {
+      types: ["Files"],
+      files: [new File(["{}"], "Plan.excalidraw")],
+    },
+  })
+
+  expect(importFiles).toHaveBeenCalledWith(
+    [expect.objectContaining({ name: "Plan.excalidraw" })],
+    { folderId: null, space: "team" },
+  )
+})
+
+test("files dropped on Home default to Private when Team is hidden", () => {
+  renderHome({ teamEnabled: false, space: "team" })
+
+  fireEvent.drop(screen.getByLabelText("Drop Excalidraw files"), {
+    dataTransfer: {
+      types: ["Files"],
+      files: [new File(["{}"], "Plan.excalidraw")],
+    },
+  })
+
+  expect(importFiles).toHaveBeenCalledWith(
+    [expect.objectContaining({ name: "Plan.excalidraw" })],
+    { folderId: null, space: "private" },
+  )
+})
+
+test("non-file drags dropped on Home do not import", () => {
+  renderHome({ teamEnabled: true, space: "team" })
+
+  fireEvent.drop(screen.getByLabelText("Drop Excalidraw files"), {
+    dataTransfer: {
+      types: ["text/plain"],
+      files: [],
+    },
+  })
+
+  expect(importFiles).not.toHaveBeenCalled()
 })
 
 test("an empty Team offers to create there, not the first-run illustration", () => {

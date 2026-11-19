@@ -5,6 +5,7 @@ import { DrawingGallery } from "@/components/drawing-gallery/DrawingGallery"
 import { TeamEmpty } from "@/components/drawing-gallery/GalleryEmpty"
 import { IllustratedEmptyState } from "@/components/illustrated-empty-state"
 import { KEYCAP_CLASS } from "@/components/ui/button"
+import { useFileDropTarget } from "@/features/drawings/import-files"
 import { useTrashDrawing } from "@/features/drawings/mutations"
 import { drawingsQueryOptions } from "@/features/drawings/queries"
 import { foldersQueryOptions } from "@/features/folders/queries"
@@ -17,6 +18,10 @@ const RECENT_LIMIT = 8
 
 export function Home({ isAdmin }: { isAdmin: boolean }) {
   const space = useBrowsedSpace()
+  const fileDrop = useFileDropTarget({
+    folderId: null,
+    space: space ?? "private",
+  })
   const { data: allDrawings = [], isPending } = useQuery(drawingsQueryOptions())
   const { data: allFolders = [] } = useQuery(foldersQueryOptions())
   const drawings = inBrowsedSpace(allDrawings, space)
@@ -26,7 +31,16 @@ export function Home({ isAdmin }: { isAdmin: boolean }) {
   const { requestMoveToTeam } = useMoveToTeamDialog()
 
   return (
-    <div className="h-full overflow-y-auto">
+    <div
+      aria-label="Drop Excalidraw files"
+      onDragOver={fileDrop.onDragOver}
+      onDragLeave={fileDrop.onDragLeave}
+      onDrop={fileDrop.onDrop}
+      className={cn(
+        "h-full overflow-y-auto transition-colors",
+        fileDrop.isOver && "bg-iris-muted ring-2 ring-inset ring-iris-ring",
+      )}
+    >
       <div className="mx-auto flex min-h-full w-full max-w-4xl flex-col px-6 py-8">
         <div className="flex items-center justify-between pb-5">
           <h1 className="text-sm font-semibold tracking-[-0.01em] text-foreground">

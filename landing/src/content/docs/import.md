@@ -23,6 +23,8 @@ drawing shows a placeholder instead.
 Add `.excalidraw` files from your computer under **Settings**, then **Import**.
 They go to Private. PNG and SVG exports that include the scene work too.
 
-To put files in a folder or in Team, drop them on it in the sidebar.
+You can drop files onto the drawing grid on Home or a folder page. On Home,
+they go to the currently selected Space. On a folder page, they go into that
+folder. You can also drop files on a folder or a Space in the sidebar.
 Imported drawings keep each file's last modified date in Recent. If a file's
 date is in the future, the import time is used instead.
