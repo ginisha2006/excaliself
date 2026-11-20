@@ -18,7 +18,8 @@ export function ImportFilesSection() {
         <p className="max-w-md text-xs text-muted-foreground">
           Add .excalidraw files from your computer. They go to Private. PNG and
           SVG exports that include the scene work too. To put files in a folder
-          or in Team, drop them on its page or on it in the sidebar.
+          or in Team, open it and drop them on the drawings, or drop them on it
+          in the sidebar.
         </p>
       </div>
       <label
