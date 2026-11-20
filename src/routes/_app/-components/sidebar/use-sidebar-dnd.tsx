@@ -6,10 +6,8 @@ import {
   useContext,
   useState,
 } from "react"
-import {
-  isFileDrag,
-  useImportDrawingFiles,
-} from "@/features/drawings/import-files"
+import { isFileDrag } from "@/features/drawings/file-drop"
+import { useImportDrawingFiles } from "@/features/drawings/import-files"
 import { type Drawing, drawingsQueryOptions } from "@/features/drawings/queries"
 import { updateDrawing } from "@/features/drawings/server"
 import { type Folder, foldersQueryOptions } from "@/features/folders/queries"

@@ -1,25 +1,15 @@
 import { FileUp } from "lucide-react"
-import { type DragEvent, useState } from "react"
+import { useFileDropTarget } from "@/features/drawings/file-drop"
 import { useImportDrawingFiles } from "@/features/drawings/import-files"
 import { cn } from "@/lib/utils"
 
 const PRIVATE_ROOT = { folderId: null, space: "private" } as const
 
-// Files dropped or chosen here land at the root of Private. The sidebar takes
-// drops into folders and Team (use-sidebar-dnd).
+// Files dropped or chosen here land at the root of Private. Home, folder
+// pages and the sidebar take drops into other targets.
 export function ImportFilesSection() {
   const importFiles = useImportDrawingFiles()
-  const [over, setOver] = useState(false)
-
-  const take = (files: FileList | null) => {
-    if (files && files.length > 0) void importFiles([...files], PRIVATE_ROOT)
-  }
-  const onDragOver = (e: DragEvent) => {
-    if (!e.dataTransfer.types.includes("Files")) return
-    e.preventDefault()
-    e.dataTransfer.dropEffect = "copy"
-    setOver(true)
-  }
+  const { isOver, dropProps } = useFileDropTarget(PRIVATE_ROOT)
 
   return (
     <section className="animate-in fade-in-0 duration-200 motion-reduce:animate-none">
@@ -28,20 +18,14 @@ export function ImportFilesSection() {
         <p className="max-w-md text-xs text-muted-foreground">
           Add .excalidraw files from your computer. They go to Private. PNG and
           SVG exports that include the scene work too. To put files in a folder
-          or in Team, drop them on it in the sidebar.
+          or in Team, drop them on its page or on it in the sidebar.
         </p>
       </div>
       <label
-        onDragOver={onDragOver}
-        onDragLeave={() => setOver(false)}
-        onDrop={(e) => {
-          e.preventDefault()
-          setOver(false)
-          take(e.dataTransfer.files)
-        }}
+        {...dropProps}
         className={cn(
           "flex max-w-md cursor-pointer flex-col items-center gap-2 rounded-md border border-dashed border-border px-4 py-8 text-xs text-muted-foreground transition-colors hover:text-foreground focus-within:ring-2 focus-within:ring-iris-ring",
-          over && "border-iris-ring bg-iris-muted text-foreground",
+          isOver && "border-iris-ring bg-iris-muted text-foreground",
         )}
       >
         <input
@@ -50,7 +34,8 @@ export function ImportFilesSection() {
           accept=".excalidraw,.json,.png,.svg"
           className="sr-only"
           onChange={(e) => {
-            take(e.currentTarget.files)
+            const files = [...(e.currentTarget.files ?? [])]
+            if (files.length > 0) void importFiles(files, PRIVATE_ROOT)
             e.currentTarget.value = ""
           }}
         />

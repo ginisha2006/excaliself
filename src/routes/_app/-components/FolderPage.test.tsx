@@ -7,7 +7,6 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react"
-import type { DragEvent } from "react"
 import { afterEach, beforeEach, expect, test, vi } from "vitest"
 import { renderPreviewSvg } from "@/components/drawing-gallery/preview"
 import type { Space } from "@/db/schema"
@@ -31,18 +30,7 @@ const {
 }))
 
 vi.mock("@/features/drawings/import-files", () => ({
-  useFileDropTarget: (
-    target: { folderId: string | null; space: Space } | null,
-  ) => ({
-    isOver: false,
-    onDragOver: vi.fn(),
-    onDragLeave: vi.fn(),
-    onDrop: (event: DragEvent) => {
-      if (!target || !event.dataTransfer?.types.includes("Files")) return
-      const files = [...event.dataTransfer.files]
-      if (files.length > 0) importFiles(files, target)
-    },
-  }),
+  useImportDrawingFiles: () => importFiles,
 }))
 
 // Cards and rows poll for live sessions (spec §1.5); these tests are not
@@ -326,32 +314,15 @@ test("files dropped on the folder grid import into that folder", () => {
     folders: [makeFolder("f1", "Projects", "team")],
   })
 
-  fireEvent.drop(screen.getByLabelText("Drop Excalidraw files"), {
-    dataTransfer: {
-      types: ["Files"],
-      files: [new File(["{}"], "Plan.excalidraw")],
-    },
+  const file = new File(["{}"], "Plan.excalidraw")
+  fireEvent.drop(screen.getByRole("heading", { name: "Projects" }), {
+    dataTransfer: { types: ["Files"], files: [file] },
   })
 
-  expect(importFiles).toHaveBeenCalledWith(
-    [expect.objectContaining({ name: "Plan.excalidraw" })],
-    { folderId: "f1", space: "team" },
-  )
-})
-
-test("non-file drags dropped on the folder grid do not import", () => {
-  renderFolderPage({
-    folders: [makeFolder("f1", "Projects", "team")],
+  expect(importFiles).toHaveBeenCalledWith([file], {
+    folderId: "f1",
+    space: "team",
   })
-
-  fireEvent.drop(screen.getByLabelText("Drop Excalidraw files"), {
-    dataTransfer: {
-      types: ["text/plain"],
-      files: [],
-    },
-  })
-
-  expect(importFiles).not.toHaveBeenCalled()
 })
 
 test("loading holds the grid with the delayed skeleton, not a spinner", () => {

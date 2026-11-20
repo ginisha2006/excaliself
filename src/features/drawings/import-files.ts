@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query"
 import { createClientOnlyFn } from "@tanstack/react-start"
-import { type DragEvent, useCallback, useState } from "react"
+import { useCallback } from "react"
 import { toast } from "sonner"
 import type { Space } from "@/db/schema"
 import { drawingsQueryOptions } from "./queries"
@@ -22,10 +22,6 @@ const SUPPORTED_FILES =
   "Drop .excalidraw files, or .png and .svg exports that include the scene."
 
 export type ImportTarget = { folderId: string | null; space: Space }
-
-/** Files dragged in from the computer, not an internal drawing or folder row. */
-export const isFileDrag = (e: DragEvent) =>
-  e.dataTransfer.types.includes("Files")
 
 /**
  * Imports files dropped from the computer as new drawings, one request per
@@ -93,41 +89,4 @@ export function useImportDrawingFiles() {
     },
     [queryClient],
   )
-}
-
-export function useFileDropTarget(target: ImportTarget | null) {
-  const importFiles = useImportDrawingFiles()
-  const [isOver, setIsOver] = useState(false)
-
-  const onDragOver = useCallback((e: DragEvent) => {
-    if (!isFileDrag(e)) return
-    e.preventDefault()
-    e.stopPropagation()
-    e.dataTransfer.dropEffect = "copy"
-    setIsOver(true)
-  }, [])
-
-  const onDragLeave = useCallback((e: DragEvent) => {
-    if (
-      e.relatedTarget instanceof Node &&
-      e.currentTarget.contains(e.relatedTarget)
-    )
-      return
-    setIsOver(false)
-  }, [])
-
-  const onDrop = useCallback(
-    (e: DragEvent) => {
-      if (!isFileDrag(e)) return
-      e.preventDefault()
-      e.stopPropagation()
-      setIsOver(false)
-
-      const files = [...e.dataTransfer.files]
-      if (files.length > 0 && target) void importFiles(files, target)
-    },
-    [importFiles, target],
-  )
-
-  return { isOver, onDragOver, onDragLeave, onDrop }
 }

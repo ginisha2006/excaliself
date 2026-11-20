@@ -12,12 +12,11 @@ import {
   FolderEmpty,
   NoMatches,
 } from "@/components/drawing-gallery/GalleryEmpty"
-import { useFileDropTarget } from "@/features/drawings/import-files"
+import { FileDropZone } from "@/features/drawings/file-drop"
 import { useTrashDrawing } from "@/features/drawings/mutations"
 import { drawingsQueryOptions } from "@/features/drawings/queries"
 import { foldersQueryOptions } from "@/features/folders/queries"
 import { useDocumentTitle } from "@/lib/document-title"
-import { cn } from "@/lib/utils"
 import { useCreateDialog } from "./CreateDialog"
 import { useMoveToTeamDialog } from "./MoveToTeamDialog"
 
@@ -33,9 +32,6 @@ export function FolderPage({ folderId }: { folderId: string }) {
   const navigate = useNavigate()
 
   const folder = folders.find((candidate) => candidate.id === folderId)
-  const fileDrop = useFileDropTarget(
-    folder ? { folderId: folder.id, space: folder.space } : null,
-  )
 
   // The route loader guards entry; this covers the folder being deleted
   // (e.g. from the sidebar) while the page is open — land on /drawings,
@@ -65,15 +61,9 @@ export function FolderPage({ folderId }: { folderId: string }) {
   const trimmedQuery = query.trim()
 
   return (
-    <div
-      aria-label="Drop Excalidraw files"
-      onDragOver={fileDrop.onDragOver}
-      onDragLeave={fileDrop.onDragLeave}
-      onDrop={fileDrop.onDrop}
-      className={cn(
-        "h-full overflow-y-auto transition-colors",
-        fileDrop.isOver && "bg-iris-muted ring-2 ring-inset ring-iris-ring",
-      )}
+    <FileDropZone
+      target={{ folderId: folder.id, space: folder.space }}
+      className="h-full overflow-y-auto"
     >
       <div className="mx-auto flex min-h-full w-full max-w-4xl flex-col px-6 py-8">
         <div className="flex items-center pb-5">
@@ -116,6 +106,6 @@ export function FolderPage({ folderId }: { folderId: string }) {
           }
         />
       </div>
-    </div>
+    </FileDropZone>
   )
 }

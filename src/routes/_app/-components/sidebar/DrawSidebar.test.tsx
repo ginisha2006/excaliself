@@ -69,8 +69,6 @@ vi.mock("@/features/spaces/server", () => ({ moveToTeam: vi.fn() }))
 const importFiles = vi.fn()
 vi.mock("@/features/drawings/import-files", () => ({
   useImportDrawingFiles: () => importFiles,
-  isFileDrag: (e: DragEvent) =>
-    e.dataTransfer?.types.includes("Files") ?? false,
 }))
 vi.mock("@/features/shares/server", () => ({ getDrawingShare: vi.fn() }))
 vi.mock("@/lib/auth-client", () => ({ authClient: { signOut: vi.fn() } }))
